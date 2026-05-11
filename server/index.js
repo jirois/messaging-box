@@ -2,9 +2,6 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
-const { Socket } = require("net");
-const { text } = require("stream/consumers");
-const { timeStamp } = require("console");
 
 const app = express();
 const server = http.createServer(app);
@@ -35,14 +32,14 @@ io.on("connection", (socket) => {
 
       // Remove user from previous room's online list
       if (roomUsers[r]) {
-        rooomUsers[r].delete(username);
+        roomUsers[r].delete(username);
         io.to(r).emit("room_users", [...roomUsers[r]]);
       }
 
       // Notify previous room that user left
       io.to(r).emit("system_message", {
         text: `${username} left the room`,
-        timeStamp: new Date().toISOString(),
+        timestamp: new Date().toISOString(),
       });
     });
 
@@ -60,7 +57,7 @@ io.on("connection", (socket) => {
     // Notify room that user joined
     io.to(room).emit("system_message", {
       text: `${username} joined the room`,
-      timeStamp: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
     });
   });
 
@@ -71,16 +68,14 @@ io.on("connection", (socket) => {
       id: crypto.randomUUID(),
       text: message,
       sender: socket.data.username,
-      timeStamp: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
     });
   });
 
   // --- Typing Indicators ---
   socket.on("typing", ({ room }) => {
     // Broadcast to everyone EXCEPT the sender
-    socket
-      .to(room)
-      .emit("user_stop_typing", { username: socket.data.username });
+    socket.to(room).emit("user_typing", { username: socket.data.username });
   });
   socket.on("stop_typing", ({ room }) => {
     socket
@@ -97,7 +92,7 @@ io.on("connection", (socket) => {
       io.to(room).emit("room_users", [...roomUsers[room]]);
       io.to(room).emit("system_message", {
         text: `${username} disconnected`,
-        timeStamp: new Date().toISOString(),
+        timestamp: new Date().toISOString(),
       });
     }
     console.log(`User disconnected: ${socket.id}`);
